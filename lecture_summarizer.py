@@ -3,17 +3,25 @@
 
 import os
 import sys
-import whisper
 import openai
 import jinja2
 import pdfkit
-import argparse
 import tiktoken
+import whisper
+from pprint import pprint
+import tkinter
+import customtkinter as ctk
+from tkinter import filedialog
+from serpapi import GoogleSearch
+import subprocess
 
 
-openai.api_key = "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"
+
+openai.api_key = ""
+serpapi_key = ""
 model_name = "gpt-3.5-turbo"
 model_max_tokens = 4096
+
 
 def transcribe(media_path):
     model = whisper.load_model("base")
@@ -21,84 +29,150 @@ def transcribe(media_path):
     return transcript["text"]
 
 def get_summary(transcript, summary_length):
-    summary_length = int(summary_length)*3 #chatbot words are about 3 times longer than normal words?
-    system_prompt = f"You are a student, who creates notes about the most important information and overarching themes of the provided university lecture. The resulting notes should be {summary_length} words in length and only contain bulletpoints separated by dashes"
+    summary_length = int(summary_length) * 3  # chatbot words are about 3 times longer than normal words?
+    system_prompt = f"You are a student, who creates notes about the most important information and overarching themes of the provided university lecture. The resulting notes should contain bulletpoints separated by '-' symbols"
     print("System Prompt: \n" + system_prompt)
-    completion = openai.ChatCompletion().create(
-        model = "gpt-3.5-turbo",
-        temperature = 0.5,
-        messages = [
+
+    completion = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",
+        messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": "Universtiy Lecture: \n" + transcript}
         ]
     )
     return completion.choices[0].message.content
 
-def gererate_pdf(title, summary, p1, p2, p3, p4, p5):
+def extract_topics(summary):
+    system_prompt = "Find the the 3 most important scientific areas to search for from the following summary. Separate the terms with '-' symbols"
 
-    #create html list
-    summary = summary.replace("-", "</li><li>")
+    completion = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": summary}
+        ]
+    )
+    return completion.choices[0].message.content
 
-    context = {
-        'title': title,
-        'summary': summary,
-        'p1': p1,
-        'p2': p2,
-        'p3': p3,
-        'p4': p4,
-        'p5': p5
+def get_related_articles(topic):
+    params = {
+    "api_key": serpapi_key,
+    "engine": "google_scholar",
+    "q": topic,
+    "hl": "en",
+    "num": "3"
     }
-    template_loader = jinja2.FileSystemLoader('./')
-    template_env = jinja2.Environment(loader=template_loader)
-    html_template = 'summary-template.html'
-    template = template_env.get_template(html_template)
-    output_text = template.render(context)
-    pdfkit.from_string(output_text, os.path.join("results", f"summary-{title}.pdf"))
+
+    search = GoogleSearch(params)
+    results = search.get_dict()
+    
+    return results["organic_results"]
 
 def count_tokens(text):
     encoding = tiktoken.encoding_for_model(model_name)
     tokens = encoding.encode(text)
     return len(tokens)
 
-def main():
-    parser = argparse.ArgumentParser(description='Generative Lecture Summarizer')
-    parser.add_argument("title", type=str, help="The title of the lecture")
-    parser.add_argument("input", type=str, help="The path to the lecture audio file or txt file containing the transcript")
-    parser.add_argument("p1")
-    parser.add_argument("p2")
-    parser.add_argument("p3")
-    parser.add_argument("p4")
-    parser.add_argument("p5")
-    parser.add_argument("length", type=str, help="The length of the summary in words")
-    args = parser.parse_args()
 
-    if(args.input.endswith(".txt")):
-        with open(args.input, 'r') as file:
+def generate_pdf(title, summary, topics, papers):
+    # create html list
+    summary = summary.replace("-", "</li><li>")
+
+    authors = []
+    for paper in papers:
+        try:
+            authors.append(paper["publication_info"]["authors"][0]["name"])
+        except:
+            authors.append("No author found")
+
+    context = {
+        'title': title,
+        'summary': summary,
+        't1': topics.split('-')[0],
+        't2': topics.split('-')[1],
+        't3': topics.split('-')[2],
+        'p1': papers[0]["title"] + "<br> Author: " + authors[0] + "<br> Link: " + papers[0]["link"] + "<br>",
+        'p2': papers[1]["title"] + "<br> Author: " + authors[1] + "<br> Link: " + papers[1]["link"] + "<br>",
+        'p3': papers[2]["title"] + "<br> Author: " + authors[2] + "<br> Link: " + papers[2]["link"] + "<br>",
+        'p4': papers[3]["title"] + "<br> Author: " + authors[3] + "<br> Link: " + papers[3]["link"] + "<br>",
+        'p5': papers[4]["title"] + "<br> Author: " + authors[4] + "<br> Link: " + papers[4]["link"] + "<br>",
+        'p6': papers[5]["title"] + "<br> Author: " + authors[5] + "<br> Link: " + papers[5]["link"] + "<br>",
+        'p7': papers[6]["title"] + "<br> Author: " + authors[6] + "<br> Link: " + papers[6]["link"] + "<br>",
+        'p8': papers[7]["title"] + "<br> Author: " + authors[7] + "<br> Link: " + papers[7]["link"] + "<br>",
+        'p9': papers[8]["title"] + "<br> Author: " + authors[8] + "<br> Link: " + papers[8]["link"]
+    }
+    template_loader = jinja2.FileSystemLoader('./')
+    template_env = jinja2.Environment(loader=template_loader)
+    html_template = 'summary-template.html'
+    template = template_env.get_template(html_template)
+    output_text = template.render(context)
+    config = pdfkit.configuration(wkhtmltopdf='/usr/local/bin/wkhtmltopdf')
+    output_path = os.path.join(f"summary {title}.pdf")
+    pdfkit.from_string(output_text, output_path, configuration=config)
+    subprocess.call(['open', output_path])
+
+def create_summary(file_path, title):
+    if file_path.endswith(".txt"):
+        with open(file_path, 'r') as file:
             transcript = file.read().replace('\n', '')
     else:
         print("Transcribing...")
-        transcript = transcribe(args.input)
-        with open(os.path.join("results", f"transcript-{args.title}.txt"), 'w') as file:
+        transcript = transcribe(file_path)
+        with open(os.path.join(f"transcript-{title}.txt"), 'w') as file:
             file.write(transcript)
 
     token_count = count_tokens(transcript)
     if token_count > model_max_tokens:
         print(f"The provided lecture is {token_count/model_max_tokens} times longer the current model allows. Please provide a shorter lecture or change to a different model. Model relevant model limitations: GPT-3.5: up to about 25 minues of audio, GPT-4: about 3 hours of audio")
         sys.exit(1)
-    
+
     print("Summarizing...")
-    summary = get_summary(transcript, args.length)
-    print("Summary: \n" + summary)
-    print("Generating PDF...")
-    gererate_pdf(args.title, summary, args.p1, args.p2, args.p3, args.p4, args.p5)
-    print("Done!")
+    summary = get_summary(transcript, summary_length=100)
+    print("\n\n\n################ Summary: ################\n\n" + summary)
+    print("\n\n\nExtracting topics...")
+    topics = extract_topics(summary)
+    print("\n\n\n################ Topics: ################\n\n", topics)
+    print("\n\n\nExtracting related articles...")
+    related_papers = []
+    for topic in topics.split('-'):
+        for paper in get_related_articles(topic):
+            related_papers.append(paper)
+    print("\n\n\n################ Related Articles: ################\n\n")
+    pprint(related_papers)
+    print("\n\n\n################ Generating PDF... ################\n\n")
+    generate_pdf(title, summary, topics, related_papers)
+    print("\n\n\n################ All Done! \n\n\n################")
 
 
+def upload_audio_file():
+    file_path = filedialog.askopenfilename(title="Select a file", filetypes=(("mp3 files","*.mp3"),("wav files","*.wav"), ("all files","*.*")))
+    if file_path:
+        input_box.delete(0, tkinter.END)
+        input_box.insert(0, file_path)
 
-if __name__ == '__main__':
+def main():
+    root = tkinter.Tk()
+    root.geometry("600x200")
+    root.title("Lectutre Summarizer")
+
+    # Create title input box
+    title_label = ctk.CTkLabel(master=root, text="Lecture Title: ", font=("Arial", 15))
+    title_label.place(x=20, y=20)
+    title_input_box = ctk.CTkEntry(master=root, width=430)
+    title_input_box.place(x=150, y=20)
+
+    # Create file input box
+    global input_box
+    input_box = ctk.CTkEntry(master=root, width=380)
+    input_box.place(x=200, y=70)
+    upload_button = ctk.CTkButton(master=root, text="Select Lecture File", corner_radius=10, command=upload_audio_file)
+    upload_button.place(x=20, y=70)
+
+    # Create generate summary button
+    generate_button = ctk.CTkButton(master=root, text="Generate Summary", corner_radius=10, command=lambda: create_summary(input_box.get(), title_input_box.get()))
+    generate_button.place(x=230, y=150)
+    root.mainloop()
+
+
+if __name__ == "__main__":
     main()
-
-#TODO
-# 1. try different prompt settings.
-# 2. Create user interface
-# 4. think about incorporating the lecture slides into the prompt.

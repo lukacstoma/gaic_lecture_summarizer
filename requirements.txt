@@ -1,7 +1,9 @@
-whisper
 openai
 jinja2
 pdfkit
 tiktoken
+git+https://github.com/openai/whisper.git
+customtkinter
+google-search-results
 
 #wkhtmltopdf install is also necessary: https://github.com/JazzCore/python-pdfkit/wiki/Installing-wkhtmltopdf
