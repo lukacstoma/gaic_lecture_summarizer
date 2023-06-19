@@ -1,4 +1,4 @@
-Lecture Summarizer Tools for Bremen University Generative AI and 
+Lecture Summarizer Tool for Bremen University Generative AI and 
 Creativity Course
 
 Usage:
