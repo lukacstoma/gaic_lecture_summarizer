@@ -85,21 +85,36 @@ def generate_pdf(title, summary, topics, papers):
         except:
             authors.append("No author found")
 
+    pdf_topics = ["" for i in range(3)]
+    for i in range(3):
+        try:
+            pdf_topics[i] = topics.split(',')[i]
+        except:
+            pass
+
+    pdf_papers = ["" for i in range(9)]
+    for i in range(9):
+        try:
+            pdf_papers[i] = papers[i]["title"] + "<br> Author: " + authors[i] + "<br> Link: " + papers[i]["link"] + "<br>"
+        except:
+            pass
+
+
     context = {
         'title': title,
         'summary': summary,
-        't1': topics.split(',')[0],
-        't2': topics.split(',')[1],
-        't3': topics.split(',')[2],
-        'p1': papers[0]["title"] + "<br> Author: " + authors[0] + "<br> Link: " + papers[0]["link"] + "<br>",
-        'p2': papers[1]["title"] + "<br> Author: " + authors[1] + "<br> Link: " + papers[1]["link"] + "<br>",
-        'p3': papers[2]["title"] + "<br> Author: " + authors[2] + "<br> Link: " + papers[2]["link"] + "<br>",
-        'p4': papers[3]["title"] + "<br> Author: " + authors[3] + "<br> Link: " + papers[3]["link"] + "<br>",
-        'p5': papers[4]["title"] + "<br> Author: " + authors[4] + "<br> Link: " + papers[4]["link"] + "<br>",
-        'p6': papers[5]["title"] + "<br> Author: " + authors[5] + "<br> Link: " + papers[5]["link"] + "<br>",
-        'p7': papers[6]["title"] + "<br> Author: " + authors[6] + "<br> Link: " + papers[6]["link"] + "<br>",
-        'p8': papers[7]["title"] + "<br> Author: " + authors[7] + "<br> Link: " + papers[7]["link"] + "<br>",
-        'p9': papers[8]["title"] + "<br> Author: " + authors[8] + "<br> Link: " + papers[8]["link"]
+        't1': pdf_topics[0],
+        't2': pdf_topics[1],
+        't3': pdf_topics[2],
+        'p1': pdf_papers[0],
+        'p2': pdf_papers[1],
+        'p3': pdf_papers[2],
+        'p4': pdf_papers[3],
+        'p5': pdf_papers[4],
+        'p6': pdf_papers[5],
+        'p7': pdf_papers[6],
+        'p8': pdf_papers[7],
+        'p9': pdf_papers[8]
     }
     template_loader = jinja2.FileSystemLoader('./')
     template_env = jinja2.Environment(loader=template_loader)
