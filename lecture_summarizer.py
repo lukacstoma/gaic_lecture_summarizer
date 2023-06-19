@@ -17,8 +17,8 @@ import subprocess
 
 
 
-openai.api_key = "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"
-serpapi_key = "9f35690e893ebc2fbf9fc769ccb58b6e1f9b615d47132313a1e614d517150615"
+openai.api_key = "sk-"
+serpapi_key = ""
 model_name = "gpt-3.5-turbo"
 model_max_tokens = 4096
 
