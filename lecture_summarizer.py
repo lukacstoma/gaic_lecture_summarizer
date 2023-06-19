@@ -17,8 +17,8 @@ import subprocess
 
 
 
-openai.api_key = ""
-serpapi_key = ""
+openai.api_key = "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"
+serpapi_key = "9f35690e893ebc2fbf9fc769ccb58b6e1f9b615d47132313a1e614d517150615"
 model_name = "gpt-3.5-turbo"
 model_max_tokens = 4096
 
@@ -43,7 +43,7 @@ def get_summary(transcript, summary_length):
     return completion.choices[0].message.content
 
 def extract_topics(summary):
-    system_prompt = "Find the the 3 most important scientific areas to search for from the following summary. Separate the terms with '-' symbols"
+    system_prompt = "Find the the 3 most important scientific areas to search for from the following summary. Separate the terms with ',' symbols. The terms should be maxium 4 words long."
 
     completion = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
@@ -88,9 +88,9 @@ def generate_pdf(title, summary, topics, papers):
     context = {
         'title': title,
         'summary': summary,
-        't1': topics.split('-')[0],
-        't2': topics.split('-')[1],
-        't3': topics.split('-')[2],
+        't1': topics.split(',')[0],
+        't2': topics.split(',')[1],
+        't3': topics.split(',')[2],
         'p1': papers[0]["title"] + "<br> Author: " + authors[0] + "<br> Link: " + papers[0]["link"] + "<br>",
         'p2': papers[1]["title"] + "<br> Author: " + authors[1] + "<br> Link: " + papers[1]["link"] + "<br>",
         'p3': papers[2]["title"] + "<br> Author: " + authors[2] + "<br> Link: " + papers[2]["link"] + "<br>",
@@ -134,7 +134,7 @@ def create_summary(file_path, title):
     print("\n\n\n################ Topics: ################\n\n", topics)
     print("\n\n\nExtracting related articles...")
     related_papers = []
-    for topic in topics.split('-'):
+    for topic in topics.split(','):
         for paper in get_related_articles(topic):
             related_papers.append(paper)
     print("\n\n\n################ Related Articles: ################\n\n")
