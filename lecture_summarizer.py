@@ -17,7 +17,7 @@ import subprocess
 
 
 
-openai.api_key = "sk-"
+openai.api_key = ""
 serpapi_key = ""
 model_name = "gpt-3.5-turbo"
 model_max_tokens = 4096
@@ -58,7 +58,7 @@ def get_related_articles(topic):
     params = {
     "api_key": serpapi_key,
     "engine": "google_scholar",
-    "q": topic,
+    "q": topic.replace(".", ""),
     "hl": "en",
     "num": "3"
     }
@@ -88,7 +88,7 @@ def generate_pdf(title, summary, topics, papers):
     pdf_topics = ["" for i in range(3)]
     for i in range(3):
         try:
-            pdf_topics[i] = topics.split(',')[i]
+            pdf_topics[i] = topics.split(',')[i].replace(".", "")
         except:
             pass
 
